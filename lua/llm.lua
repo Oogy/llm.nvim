@@ -51,27 +51,6 @@ function M.get_visual_selection()
   end
 end
 
-function M.make_anthropic_spec_curl_args(opts, prompt, system_prompt)
-  local url = opts.url
-  local api_key = opts.api_key_name and get_api_key(opts.api_key_name)
-  local data = {
-    system = system_prompt,
-    messages = { { role = 'user', content = prompt } },
-    model = opts.model,
-    stream = true,
-    max_tokens = 4096,
-  }
-  local args = { '-N', '-X', 'POST', '-H', 'Content-Type: application/json', '-d', vim.json.encode(data) }
-  if api_key then
-    table.insert(args, '-H')
-    table.insert(args, 'x-api-key: ' .. api_key)
-    table.insert(args, '-H')
-    table.insert(args, 'anthropic-version: 2023-06-01')
-  end
-  table.insert(args, url)
-  return args
-end
-
 function M.make_openai_spec_curl_args(opts, prompt, system_prompt)
   local url = opts.url
   local api_key = opts.api_key_name and get_api_key(opts.api_key_name)
@@ -127,15 +106,6 @@ local function get_prompt(opts)
   return prompt
 end
 
-function M.handle_anthropic_spec_data(data_stream, event_state)
-  if event_state == 'content_block_delta' then
-    local json = vim.json.decode(data_stream)
-    if json.delta and json.delta.text then
-      M.write_string_at_cursor(json.delta.text)
-    end
-  end
-end
-
 function M.handle_openai_spec_data(data_stream)
   if data_stream:match '"delta":' then
     local json = vim.json.decode(data_stream)
@@ -148,7 +118,7 @@ function M.handle_openai_spec_data(data_stream)
   end
 end
 
-local group = vim.api.nvim_create_augroup('DING_LLM_AutoGroup', { clear = true })
+local group = vim.api.nvim_create_augroup('LLM_AutoGroup', { clear = true })
 local active_job = nil
 
 function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_data_fn)
@@ -191,7 +161,7 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
 
   vim.api.nvim_create_autocmd('User', {
     group = group,
-    pattern = 'DING_LLM_Escape',
+    pattern = 'LLM_Escape',
     callback = function()
       if active_job then
         active_job:shutdown()
@@ -201,7 +171,7 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
     end,
   })
 
-  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User DING_LLM_Escape<CR>', { noremap = true, silent = true })
+  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User LLM_Escape<CR>', { noremap = true, silent = true })
   return active_job
 end
 
