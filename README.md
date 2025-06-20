@@ -53,13 +53,12 @@ Add your API keys to your env (export it in zshrc or bashrc)
       end
 
 
-      local function llama_405b_base()
+      local function llama_405b_replace()
         llm.invoke_llm_and_stream_into_editor({
           url = 'https://openrouter.ai/api/v1/chat/completions',
           model = 'meta-llama/llama-3.1-405b',
           api_key_name = 'OPEN_ROUTER_API_KEY',
-          max_tokens = '128',
-          replace = false,
+          replace = true,
         }, custom_make_openai_spec_curl_args, handle_open_router_spec_data)
       end
 
